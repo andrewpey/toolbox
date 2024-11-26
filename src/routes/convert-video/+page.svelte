@@ -190,7 +190,7 @@
 					<div class="mt-2 h-2 w-full rounded-full bg-gray-200">
 						<div
 							class="h-2 rounded-full bg-green-500"
-							style="width: {(item.progress * 100).toFixed(0)}%;"
+							style="width: {(item.progress * 100).toFixed(0)}%; transition: width 0.5s ease;"
 						></div>
 					</div>
 				</div>
