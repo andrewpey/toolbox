@@ -15,8 +15,15 @@
 	let items = $state<QueueItem[]>([]);
 	let currentItem: QueueItem | undefined;
 	let isDragOver = $state(false);
+	let outputFormat = $state<'webp' | 'mp4'>('webp');
 
-	onMount(() => loadFFmpeg());
+	onMount(() => {
+		const hashFormat = window.location.hash.slice(1);
+		if (hashFormat === 'mp4' || hashFormat === 'webp') {
+			outputFormat = hashFormat;
+		}
+		loadFFmpeg();
+	});
 
 	async function loadFFmpeg() {
 		const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
@@ -56,25 +63,32 @@
 			const videoData = await readFile(item.file);
 
 			await ffmpeg.writeFile('input.mp4', videoData);
-			await ffmpeg.exec([
-				'-i',
-				'input.mp4',
-				'-vf',
-				'fps=30,scale=700:-1:flags=lanczos',
-				'-c:v',
-				'libwebp',
-				'-loop',
-				'0',
-				'-q:v',
-				'80',
-				'-preset',
-				'default',
-				'-an',
-				'output.webp'
-			]);
+			if (outputFormat === 'webp') {
+				await ffmpeg.exec([
+					'-i',
+					'input.mp4',
+					'-vf',
+					'fps=30,scale=700:-1:flags=lanczos',
+					'-c:v',
+					'libwebp',
+					'-loop',
+					'0',
+					'-q:v',
+					'80',
+					'-preset',
+					'default',
+					'-an',
+					'output.webp'
+				]);
 
-			const data = await ffmpeg.readFile('output.webp');
-			downloadVideo(data as Uint8Array);
+				const data = await ffmpeg.readFile('output.webp');
+				downloadFile(data as Uint8Array, 'video.webp', 'image/webp');
+			} else {
+				await ffmpeg.exec(['-i', 'input.mp4', '-an', 'output.mp4']);
+
+				const data = await ffmpeg.readFile('output.mp4');
+				downloadFile(data as Uint8Array, 'video.mp4', 'video/mp4');
+			}
 
 			item.progress = 1;
 		}
@@ -99,27 +113,33 @@
 			const videoData = await readFile(item.file);
 
 			await ffmpeg.writeFile('input.mp4', videoData);
-			await ffmpeg.exec([
-				'-i',
-				'input.mp4',
-				'-vf',
-				'fps=30,scale=700:-1:flags=lanczos',
-				'-c:v',
-				'libwebp',
-				'-loop',
-				'0',
-				'-q:v',
-				'80',
-				'-preset',
-				'default',
-				'-an',
-				'output.webp'
-			]);
+			if (outputFormat === 'webp') {
+				await ffmpeg.exec([
+					'-i',
+					'input.mp4',
+					'-vf',
+					'fps=30,scale=700:-1:flags=lanczos',
+					'-c:v',
+					'libwebp',
+					'-loop',
+					'0',
+					'-q:v',
+					'80',
+					'-preset',
+					'default',
+					'-an',
+					'output.webp'
+				]);
 
-			const data = await ffmpeg.readFile('output.webp');
-			downloadVideo(data as Uint8Array);
+				const data = await ffmpeg.readFile('output.webp');
+				downloadFile(data as Uint8Array, 'video.webp', 'image/webp');
+			} else {
+				await ffmpeg.exec(['-i', 'input.mp4', '-an', 'output.mp4']);
 
-			// Mark progress as complete for the item
+				const data = await ffmpeg.readFile('output.mp4');
+				downloadFile(data as Uint8Array, 'video.mp4', 'video/mp4');
+			}
+
 			item.progress = 1; // Sets progress to 100%
 		}
 
@@ -147,10 +167,10 @@
 		});
 	}
 
-	function downloadVideo(data: Uint8Array) {
+	function downloadFile(data: Uint8Array, filename: string, mimeType: string) {
 		const a = document.createElement('a');
-		a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'image/webp' }));
-		a.download = 'video.webp';
+		a.href = URL.createObjectURL(new Blob([data.buffer], { type: mimeType }));
+		a.download = filename;
 		a.click();
 	}
 </script>
@@ -161,6 +181,29 @@
 			<p class="text-gray-400">Loading FFmpeg, please wait...</p>
 		{/if}
 		{#if currentState === 'loaded' && items.length === 0}
+			<div class="mb-4 flex justify-center">
+				<label class="mr-2">Output format:</label>
+				<label>
+					<input
+						type="radio"
+						name="outputFormat"
+						value="webp"
+						bind:group={outputFormat}
+						checked={outputFormat === 'webp'}
+					/>
+					WebP
+				</label>
+				<label class="ml-4">
+					<input
+						type="radio"
+						name="outputFormat"
+						value="mp4"
+						bind:group={outputFormat}
+						checked={outputFormat === 'mp4'}
+					/>
+					MP4
+				</label>
+			</div>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div
