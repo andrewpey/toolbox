@@ -15,7 +15,7 @@
 	let items = $state<QueueItem[]>([]);
 	let currentItem: QueueItem | undefined;
 	let isDragOver = $state(false);
-	let outputFormat = $state<'webp' | 'mp4'>('webp');
+	let outputFormat = $state<'mp4' | 'webp'>('mp4');
 
 	onMount(() => {
 		const hashFormat = window.location.hash.slice(1);
@@ -23,6 +23,10 @@
 			outputFormat = hashFormat;
 		}
 		loadFFmpeg();
+	});
+
+	$effect(() => {
+		window.location.hash = outputFormat;
 	});
 
 	async function loadFFmpeg() {
@@ -182,18 +186,9 @@
 		{/if}
 		{#if currentState === 'loaded' && items.length === 0}
 			<div class="mb-4 flex justify-center">
-				<label class="mr-2">Output format:</label>
+				<!-- svelte-ignore a11y_label_has_associated_control -->
+				<label class="mr-2">Output:</label>
 				<label>
-					<input
-						type="radio"
-						name="outputFormat"
-						value="webp"
-						bind:group={outputFormat}
-						checked={outputFormat === 'webp'}
-					/>
-					WebP
-				</label>
-				<label class="ml-4">
 					<input
 						type="radio"
 						name="outputFormat"
@@ -202,6 +197,16 @@
 						checked={outputFormat === 'mp4'}
 					/>
 					MP4
+				</label>
+				<label class="ml-2">
+					<input
+						type="radio"
+						name="outputFormat"
+						value="webp"
+						bind:group={outputFormat}
+						checked={outputFormat === 'webp'}
+					/>
+					WebP
 				</label>
 			</div>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
