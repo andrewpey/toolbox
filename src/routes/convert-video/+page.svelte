@@ -1,0 +1,154 @@
+<script lang="ts">
+	import { fade } from 'svelte/transition';
+	import { FFmpeg } from '@ffmpeg/ffmpeg';
+	import { onMount } from 'svelte';
+
+	type State = 'loading' | 'loaded' | 'convert.start' | 'convert.error' | 'convert.done';
+	type QueueItem = {
+		file: File;
+		progress: number;
+	};
+
+	let currentState = $state<State>('loading');
+	let error = $state('');
+	let ffmpeg: FFmpeg;
+	let items = $state<QueueItem[]>([]);
+	let currentItem: QueueItem | undefined;
+
+	async function readFile(file: File): Promise<Uint8Array> {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+
+			reader.onload = () => {
+				const result = reader.result;
+				if (result instanceof ArrayBuffer) {
+					resolve(new Uint8Array(result));
+				} else {
+					reject('File read error: result is not an ArrayBuffer');
+				}
+			};
+
+			reader.onerror = () => {
+				error = 'Could not load file';
+			};
+
+			reader.readAsArrayBuffer(file);
+		});
+	}
+
+	function downloadVideo(data: Uint8Array) {
+		const a = document.createElement('a');
+		a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'image/webp' }));
+		a.download = 'video.webp';
+		a.click();
+	}
+
+	async function handleDrop(event: DragEvent) {
+		event.preventDefault();
+
+		if (!event.dataTransfer || event.dataTransfer.files.length === 0) return;
+
+		currentState = 'convert.start';
+		items = [...event.dataTransfer.files].map((file) => ({
+			file,
+			progress: 0
+		}));
+
+		for (const item of items) {
+			currentItem = item;
+			const videoData = await readFile(item.file);
+
+			await ffmpeg.writeFile('input.mp4', videoData);
+			await ffmpeg.exec([
+				'-i',
+				'input.mp4',
+				'-vf',
+				'fps=30,scale=700:-1:flags=lanczos',
+				'-c:v',
+				'libwebp',
+				'-loop',
+				'0',
+				'-q:v',
+				'80',
+				'-preset',
+				'default',
+				'-an',
+				'output.webp'
+			]);
+
+			const data = await ffmpeg.readFile('output.webp');
+			downloadVideo(data as Uint8Array);
+
+			// Mark progress as complete for the item
+			item.progress = 1; // Sets progress to 100%
+		}
+
+		currentState = 'convert.done';
+	}
+
+	async function loadFFmpeg() {
+		const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+
+		ffmpeg = new FFmpeg();
+
+		ffmpeg.on('log', ({ message }) => {
+			console.log(message);
+		});
+
+		ffmpeg.on('progress', (event) => {
+			if (currentItem) {
+				currentItem.progress = event.progress;
+			}
+		});
+
+		await ffmpeg.load({
+			coreURL: `${baseURL}/ffmpeg-core.js`,
+			wasmURL: `${baseURL}/ffmpeg-core.wasm`
+		});
+
+		currentState = 'loaded';
+	}
+
+	onMount(() => loadFFmpeg());
+</script>
+
+<div class="flex min-h-screen items-center justify-center bg-gray-200 text-gray-900">
+	<div class="w-full max-w-lg p-6 text-center">
+		{#if currentState === 'loaded' && items.length === 0}
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				class="flex cursor-pointer items-center justify-center rounded-lg border-4 border-dashed
+				border-gray-300 py-24 transition hover:bg-gray-300"
+				ondrop={handleDrop}
+				ondragover={(event) => event.preventDefault()}
+			>
+				<p class="text-gray-400">Drag videos here</p>
+			</div>
+		{/if}
+
+		{#if currentState === 'convert.start' || currentState === 'convert.done'}
+			{#each items as item}
+				<div class="mb-4 rounded-lg bg-white p-4 text-gray-500">
+					<div class="flex items-center">
+						<p class="text-lg font-medium">{item.file.name}</p>
+						<p class="ml-auto text-sm text-gray-400">{(item.progress * 100).toFixed(0)}%</p>
+					</div>
+					<div class="mt-2 h-2 w-full rounded-full bg-gray-200">
+						<div
+							class="h-2 rounded-full bg-green-500"
+							style="width: {(item.progress * 100).toFixed(0)}%;"
+						></div>
+					</div>
+				</div>
+			{/each}
+		{/if}
+
+		<!-- Error Handling -->
+		{#if error}
+			<p class="mt-4 text-red-500" in:fade>{error}</p>
+		{/if}
+	</div>
+</div>
+
+<style lang="postcss">
+</style>
