@@ -3,48 +3,88 @@
 	import { FFmpeg } from '@ffmpeg/ffmpeg';
 	import { onMount } from 'svelte';
 
-	type State = 'loading' | 'loaded' | 'convert.start' | 'convert.error' | 'convert.done';
+	type State = 'loading.ffmpeg' | 'loaded' | 'convert.start' | 'convert.error' | 'convert.done';
 	type QueueItem = {
 		file: File;
 		progress: number;
 	};
 
-	let currentState = $state<State>('loading');
+	let currentState = $state<State>('loading.ffmpeg');
 	let error = $state('');
 	let ffmpeg: FFmpeg;
 	let items = $state<QueueItem[]>([]);
 	let currentItem: QueueItem | undefined;
+	let isDragOver = $state(false);
 
-	async function readFile(file: File): Promise<Uint8Array> {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader();
+	onMount(() => loadFFmpeg());
 
-			reader.onload = () => {
-				const result = reader.result;
-				if (result instanceof ArrayBuffer) {
-					resolve(new Uint8Array(result));
-				} else {
-					reject('File read error: result is not an ArrayBuffer');
-				}
-			};
+	async function loadFFmpeg() {
+		const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
 
-			reader.onerror = () => {
-				error = 'Could not load file';
-			};
+		ffmpeg = new FFmpeg();
 
-			reader.readAsArrayBuffer(file);
+		ffmpeg.on('log', ({ message }) => {
+			console.log(message);
 		});
+
+		ffmpeg.on('progress', (event) => {
+			if (currentItem) {
+				currentItem.progress = event.progress;
+			}
+		});
+
+		await ffmpeg.load({
+			coreURL: `${baseURL}/ffmpeg-core.js`,
+			wasmURL: `${baseURL}/ffmpeg-core.wasm`
+		});
+
+		currentState = 'loaded'; // FFmpeg loaded
 	}
 
-	function downloadVideo(data: Uint8Array) {
-		const a = document.createElement('a');
-		a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'image/webp' }));
-		a.download = 'video.webp';
-		a.click();
+	async function handleFileInput(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (!input.files || input.files.length === 0) return;
+
+		currentState = 'convert.start';
+		items = [...input.files].map((file) => ({
+			file,
+			progress: 0
+		}));
+
+		for (const item of items) {
+			currentItem = item;
+			const videoData = await readFile(item.file);
+
+			await ffmpeg.writeFile('input.mp4', videoData);
+			await ffmpeg.exec([
+				'-i',
+				'input.mp4',
+				'-vf',
+				'fps=30,scale=700:-1:flags=lanczos',
+				'-c:v',
+				'libwebp',
+				'-loop',
+				'0',
+				'-q:v',
+				'80',
+				'-preset',
+				'default',
+				'-an',
+				'output.webp'
+			]);
+
+			const data = await ffmpeg.readFile('output.webp');
+			downloadVideo(data as Uint8Array);
+
+			item.progress = 1;
+		}
+
+		currentState = 'convert.done';
 	}
 
 	async function handleDrop(event: DragEvent) {
 		event.preventDefault();
+		isDragOver = false;
 
 		if (!event.dataTransfer || event.dataTransfer.files.length === 0) return;
 
@@ -86,43 +126,57 @@
 		currentState = 'convert.done';
 	}
 
-	async function loadFFmpeg() {
-		const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+	async function readFile(file: File): Promise<Uint8Array> {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
 
-		ffmpeg = new FFmpeg();
+			reader.onload = () => {
+				const result = reader.result;
+				if (result instanceof ArrayBuffer) {
+					resolve(new Uint8Array(result));
+				} else {
+					reject('File read error: result is not an ArrayBuffer');
+				}
+			};
 
-		ffmpeg.on('log', ({ message }) => {
-			console.log(message);
+			reader.onerror = () => {
+				error = 'Could not load file';
+			};
+
+			reader.readAsArrayBuffer(file);
 		});
-
-		ffmpeg.on('progress', (event) => {
-			if (currentItem) {
-				currentItem.progress = event.progress;
-			}
-		});
-
-		await ffmpeg.load({
-			coreURL: `${baseURL}/ffmpeg-core.js`,
-			wasmURL: `${baseURL}/ffmpeg-core.wasm`
-		});
-
-		currentState = 'loaded';
 	}
 
-	onMount(() => loadFFmpeg());
+	function downloadVideo(data: Uint8Array) {
+		const a = document.createElement('a');
+		a.href = URL.createObjectURL(new Blob([data.buffer], { type: 'image/webp' }));
+		a.download = 'video.webp';
+		a.click();
+	}
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-gray-200 text-gray-900">
 	<div class="w-full max-w-lg p-6 text-center">
+		{#if currentState === 'loading.ffmpeg'}
+			<p class="text-gray-400">Loading FFmpeg, please wait...</p>
+		{/if}
 		{#if currentState === 'loaded' && items.length === 0}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div
-				class="flex cursor-pointer items-center justify-center rounded-lg border-4 border-dashed
-				border-gray-300 py-24 transition hover:bg-gray-300"
+				class="flex cursor-pointer items-center justify-center rounded-lg border-4 border-dashed border-gray-300 py-24 transition hover:bg-gray-300"
+				class:is-drag-over={isDragOver}
 				ondrop={handleDrop}
-				ondragover={(event) => event.preventDefault()}
+				ondragover={(event) => {
+					event.preventDefault();
+					isDragOver = true;
+				}}
+				ondragenter={() => (isDragOver = true)}
+				ondragleave={() => (isDragOver = false)}
+				onclick={() => document.getElementById('fileInput')?.click()}
 			>
-				<p class="text-gray-400">Drag videos here</p>
+				<p class="text-gray-400">Drag videos here or click to select</p>
+				<input id="fileInput" type="file" multiple class="hidden" onchange={handleFileInput} />
 			</div>
 		{/if}
 
@@ -143,7 +197,6 @@
 			{/each}
 		{/if}
 
-		<!-- Error Handling -->
 		{#if error}
 			<p class="mt-4 text-red-500" in:fade>{error}</p>
 		{/if}
@@ -151,4 +204,7 @@
 </div>
 
 <style lang="postcss">
+	.is-drag-over {
+		background-color: #d1d5db; /* Tailwind's bg-gray-300 */
+	}
 </style>
