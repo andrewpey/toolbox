@@ -223,8 +223,15 @@
 				ondragleave={() => (isDragOver = false)}
 				onclick={() => document.getElementById('fileInput')?.click()}
 			>
-				<p class="text-gray-400">Drag videos here or click to select</p>
-				<input id="fileInput" type="file" multiple class="hidden" onchange={handleFileInput} />
+				<p class="text-gray-400">Drag MP4 videos here or click to select</p>
+				<input
+					id="fileInput"
+					accept=".mp4"
+					type="file"
+					multiple
+					class="hidden"
+					onchange={handleFileInput}
+				/>
 			</div>
 		{/if}
 
