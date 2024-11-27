@@ -52,12 +52,9 @@
 		currentState = 'loaded'; // FFmpeg loaded
 	}
 
-	async function handleFileInput(event: Event) {
-		const input = event.target as HTMLInputElement;
-		if (!input.files || input.files.length === 0) return;
-
+	async function processFiles(files: File[]) {
 		currentState = 'convert.start';
-		items = [...input.files].map((file) => ({
+		items = files.map((file) => ({
 			file,
 			progress: 0
 		}));
@@ -100,54 +97,20 @@
 		currentState = 'convert.done';
 	}
 
+	async function handleFileInput(event: Event) {
+		const input = event.target as HTMLInputElement;
+		if (!input.files || input.files.length === 0) return;
+
+		await processFiles([...input.files]);
+	}
+
 	async function handleDrop(event: DragEvent) {
 		event.preventDefault();
 		isDragOver = false;
 
 		if (!event.dataTransfer || event.dataTransfer.files.length === 0) return;
 
-		currentState = 'convert.start';
-		items = [...event.dataTransfer.files].map((file) => ({
-			file,
-			progress: 0
-		}));
-
-		for (const item of items) {
-			currentItem = item;
-			const videoData = await readFile(item.file);
-
-			await ffmpeg.writeFile('input.mp4', videoData);
-			if (outputFormat === 'webp') {
-				await ffmpeg.exec([
-					'-i',
-					'input.mp4',
-					'-vf',
-					'fps=30,scale=700:-1:flags=lanczos',
-					'-c:v',
-					'libwebp',
-					'-loop',
-					'0',
-					'-q:v',
-					'80',
-					'-preset',
-					'default',
-					'-an',
-					'output.webp'
-				]);
-
-				const data = await ffmpeg.readFile('output.webp');
-				downloadFile(data as Uint8Array, 'video.webp', 'image/webp');
-			} else {
-				await ffmpeg.exec(['-i', 'input.mp4', '-an', 'output.mp4']);
-
-				const data = await ffmpeg.readFile('output.mp4');
-				downloadFile(data as Uint8Array, 'video.mp4', 'video/mp4');
-			}
-
-			item.progress = 1; // Sets progress to 100%
-		}
-
-		currentState = 'convert.done';
+		await processFiles([...event.dataTransfer.files]);
 	}
 
 	async function readFile(file: File): Promise<Uint8Array> {
