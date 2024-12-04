@@ -186,7 +186,8 @@
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <div
-                class="flex cursor-pointer items-center justify-center rounded-lg border-4 border-dashed border-gray-300 py-24 transition hover:bg-gray-300"
+                class="flex cursor-pointer items-center justify-center rounded-lg border-4 border-dashed py-24 transition hover:bg-gray-300 {'border-' +
+                    outputFormat}"
                 class:is-drag-over={isDragOver}
                 ondrop={handleDrop}
                 ondragover={(event) => {
@@ -237,7 +238,28 @@
 </div>
 
 <style lang="postcss">
+    :root {
+        --color-mp4: #ce71c9;
+        --color-webp: #4d91cf;
+    }
+
     .is-drag-over {
         @apply bg-gray-300;
+    }
+
+    .border-mp4 {
+        border-color: var(--color-mp4);
+    }
+
+    .border-webp {
+        border-color: var(--color-webp);
+    }
+
+    input[value='mp4'] {
+        accent-color: var(--color-mp4);
+    }
+
+    input[value='webp'] {
+        accent-color: var(--color-webp);
     }
 </style>
