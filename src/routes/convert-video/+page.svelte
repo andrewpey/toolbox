@@ -73,7 +73,7 @@
                     '-i',
                     'input.mp4',
                     '-vf',
-                    'fps=30,scale=700:-1:flags=lanczos',
+                    'fps=30,scale=min(700,iw):flags=lanczos',
                     '-c:v',
                     'libwebp',
                     '-loop',
@@ -89,7 +89,14 @@
                 const data = await ffmpeg.readFile('output.webp');
                 downloadFile(data as Uint8Array, 'video.webp', 'image/webp');
             } else {
-                await ffmpeg.exec(['-i', 'input.mp4', '-an', 'output.mp4']);
+                await ffmpeg.exec([
+                    '-i',
+                    'input.mp4',
+                    '-vf',
+                    "scale='min(700,iw)':-1",
+                    '-an',
+                    'output.mp4'
+                ]);
 
                 const data = await ffmpeg.readFile('output.mp4');
                 downloadFile(data as Uint8Array, 'video.mp4', 'video/mp4');
