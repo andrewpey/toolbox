@@ -16,16 +16,16 @@
 </script>
 
 <div class="flex h-dvh w-full flex-col sm:flex-row">
-    <div class="flex-1">
+    <div class="flex flex-1">
         <textarea
             bind:value={md}
-            class="h-full w-full resize-none overscroll-contain border-none bg-white p-4 text-lg focus:outline-none sm:p-16"
+            class="flex-1 resize-none overscroll-contain border-none bg-white p-4 text-lg focus:outline-none sm:p-16"
         ></textarea>
     </div>
 
-    <div class="relative flex-1">
+    <div class="relative flex flex-1">
         <textarea
-            class="h-full w-full resize-none overscroll-contain border-none bg-gray-50 p-4 text-lg focus:outline-none sm:p-16"
+            class="flex-1 resize-none overscroll-contain border-none bg-gray-50 p-4 text-lg focus:outline-none sm:p-16"
             readonly>{bb}</textarea
         >
 
