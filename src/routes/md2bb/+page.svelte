@@ -15,14 +15,14 @@
     }
 </script>
 
-<div class="flex h-screen w-full items-center justify-center gap-8 rounded-lg bg-gray-100 p-8">
+<div class="flex h-screen w-full items-center justify-center">
     <textarea
         bind:value={md}
-        class="h-full w-full resize-none rounded-lg border-4 border-gray-300 p-4 text-lg focus:border-blue-300 focus:outline-none"
+        class="h-full w-full resize-none border-none bg-white p-16 text-lg focus:border-blue-300 focus:outline-none"
     ></textarea>
 
     <textarea
-        class="h-full w-full resize-none rounded-lg border-4 border-gray-300 p-4 text-lg focus:outline-none"
+        class="h-full w-full resize-none border-none bg-gray-50 p-16 text-lg focus:outline-none"
         readonly>{bb}</textarea
     >
 
@@ -39,3 +39,11 @@
         {/if}
     </button>
 </div>
+
+<style lang="postcss">
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap');
+
+    textarea {
+        font-family: 'Roboto Mono', serif;
+    }
+</style>
