@@ -15,29 +15,30 @@
     }
 </script>
 
-<div class="flex h-screen w-full items-center justify-center">
+<div class="flex h-screen w-full flex-col md:flex-row">
     <textarea
         bind:value={md}
-        class="h-full w-full resize-none border-none bg-white p-16 text-lg focus:border-blue-300 focus:outline-none"
+        class="flex-1 resize-none border-none bg-white p-4 text-lg focus:border-blue-300 focus:outline-none md:p-16"
     ></textarea>
 
-    <textarea
-        class="h-full w-full resize-none border-none bg-gray-50 p-16 text-lg focus:outline-none"
-        readonly>{bb}</textarea
-    >
+    <div class="relative flex-1">
+        <textarea
+            class="h-full w-full resize-none border-none bg-gray-50 p-4 pt-16 text-lg focus:outline-none md:p-16 md:pt-16"
+            readonly>{bb}</textarea
+        >
 
-    <!-- svelte-ignore a11y_consider_explicit_label -->
-    <button
-        onclick={copy}
-        class="absolute right-10 top-10 flex items-center justify-center rounded p-2 text-gray-300 hover:text-blue-300 focus:outline-none active:text-blue-400"
-    >
-        <span class="material-symbols-outlined">content_copy</span>
-        {#if confetti}
-            <div class="pointer-events-none fixed">
-                <Confetti x={[-0.5, 0.5]} y={[-0.5, 0.5]} />
-            </div>
-        {/if}
-    </button>
+        <button
+            onclick={copy}
+            class="absolute right-4 top-4 flex items-center justify-center rounded p-2 text-gray-300 hover:text-blue-300 focus:outline-none active:text-blue-400 md:right-6 md:top-6"
+        >
+            <span class="material-symbols-outlined">content_copy</span>
+            {#if confetti}
+                <div class="pointer-events-none fixed">
+                    <Confetti x={[-0.5, 0.5]} y={[-0.5, 0.5]} />
+                </div>
+            {/if}
+        </button>
+    </div>
 </div>
 
 <style lang="postcss">

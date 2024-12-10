@@ -6,6 +6,9 @@ const root = `https://voxeltycoon.xyz`;
  * @returns The converted BBCode text.
  */
 export function convert(text: string): string {
+    if (text === '')
+        return '';
+
     text = text.replace(/thumb: \//g, `thumb: ${root}/`);
     text = text.replace(/\[(.*?)\]\((.*?)\)/g, (_, p1, p2) => `[url=${getUrl(p2)}]${p1}[/url]`);
     text = text.replace(/{% include img\.html src="(.*?)" alt="(.*?)" %}/g, (_, p1, p2) => `[img]${getUrl(p1)}[/img]\n[i]${p2}[/i]`);
