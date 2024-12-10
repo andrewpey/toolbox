@@ -23,7 +23,7 @@
 
     <div class="relative flex-1">
         <textarea
-            class="h-full w-full resize-none border-none bg-gray-50 p-4 pt-16 text-lg focus:outline-none md:p-16 md:pt-16"
+            class="h-full w-full resize-none border-none bg-gray-50 p-4 text-lg focus:outline-none md:p-16"
             readonly>{bb}</textarea
         >
 
