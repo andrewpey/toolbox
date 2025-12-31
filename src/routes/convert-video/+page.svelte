@@ -188,7 +188,7 @@
             <div
                 class="flex cursor-pointer items-center justify-center rounded-lg border-4 border-dashed py-24 transition hover:bg-gray-300 {'border-' +
                     outputFormat}"
-                class:is-drag-over={isDragOver}
+                class:bg-gray-300={isDragOver}
                 ondrop={handleDrop}
                 ondragover={(event) => {
                     event.preventDefault();
@@ -241,10 +241,6 @@
     :root {
         --color-mp4: #ce71c9;
         --color-webp: #4d91cf;
-    }
-
-    .is-drag-over {
-        @apply bg-gray-300;
     }
 
     .border-mp4 {
