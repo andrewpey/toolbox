@@ -33,6 +33,11 @@
         return `${(progress * 100).toFixed(0)}%`;
     }
 
+    function getOutputFileName(file: File, newExt: string) {
+        const name = file.name.replace(/\.[^/.]+$/, '');
+        return `${name}.${newExt}`;
+    }
+
     async function loadFFmpeg() {
         const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
 
@@ -87,7 +92,8 @@
                 ]);
 
                 const data = await ffmpeg.readFile('output.webp');
-                downloadFile(data as Uint8Array, 'video.webp', 'image/webp');
+                const outputFilename = getOutputFileName(item.file, 'webp');
+                downloadFile(data as Uint8Array, outputFilename, 'image/webp');
             } else {
                 await ffmpeg.exec([
                     '-i',
@@ -99,7 +105,8 @@
                 ]);
 
                 const data = await ffmpeg.readFile('output.mp4');
-                downloadFile(data as Uint8Array, 'video.mp4', 'video/mp4');
+                const outputFilename = getOutputFileName(item.file, 'mp4');
+                downloadFile(data as Uint8Array, outputFilename, 'video/mp4');
             }
 
             item.progress = 1;
