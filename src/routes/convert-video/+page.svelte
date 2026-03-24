@@ -78,7 +78,7 @@
                     '-i',
                     'input.mp4',
                     '-vf',
-                    "fps=30,scale='min(700,iw)':-1:flags=lanczos",
+                    "fps=30,scale='min(700,iw)':-2:flags=lanczos",
                     '-c:v',
                     'libwebp',
                     '-loop',
@@ -99,7 +99,7 @@
                     '-i',
                     'input.mp4',
                     '-vf',
-                    "scale='min(700,iw)':-1",
+                    "scale='min(700,iw)':-2",
                     '-an',
                     'output.mp4'
                 ]);
